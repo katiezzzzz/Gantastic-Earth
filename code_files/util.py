@@ -1,4 +1,3 @@
-from numpy.core.numeric import outer
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
@@ -44,11 +43,11 @@ def crop(img, l):
     '''
     Crop a given image
     Params:
-        img: dimension (channels, x, y)
-        label: label of the input image, integer
-        l: length of cropped image
+        img: numpy array, dimension (channels, x, y)
+        label: integer, label of the input image
+        l: integer, length of cropped image in pixels
     Return:
-        array of cropped image
+        array of cropped image, dimension (channels, l, l)
     '''
     x_max, y_max = img.shape[1:]
     x = np.random.randint(0, x_max-l+1)
@@ -56,6 +55,13 @@ def crop(img, l):
     return img[:, x:x+l, y:y+l]
 
 def read_img(img_pth):
+    '''
+    Read images given their directories
+    Params:
+        img_pth: string list, paths to images
+    Return:
+        numpy array of images, dimension (n_imgs, channels, width, length)
+    '''
     imgs = np.array([])
     for i in range(len(img_pth)):
         im = plt.imread(img_pth[i])
@@ -133,6 +139,16 @@ def gen_intermediate_labels(label1, label2, val, n_classes, device):
     return one_hot
 
 def add_noise_dim(noise, new_noise, n_repeat, start_idx=0):
+    '''
+    Append the first n_repeat dimensions of noise to the end of the original noise
+    Params:
+        noise: torch tensor of unique random noise, e.g. tensor[z0, z1, z2, z3]
+        new_noise: torch tensor
+        n_repeat: integer, number of noise column that is going to be repeated, e.g. 2
+        start_idx: integer, default 0
+    Return:
+        torch tensor, e.g. tensor[z0, z1, z2, z3, z0, z1]
+    '''
     for idx0 in range(noise.shape[0]):
         for idx1 in range(noise.shape[1]):
             for idx2 in range(noise.shape[2]):
@@ -167,6 +183,21 @@ def calc_gradient_penalty(netD, real_data, fake_data, batch_size, img_length, de
     return gradient_penalty
 
 def test(path, labels, netG, n_classes, z_dim=64, lf=4, device='cpu', ratio=2):
+    '''
+    Generate test images for the desired label
+    Params:
+        path: string, path to directory where the generator is stored
+        labels: integer list, representing labels
+        netG: empty generator class
+        n_classes: integer
+        z_dim: integer
+        lf: integer, spatial dimension of input seed
+        device: string
+        ratio: integer, length/width ratio for generated image
+    Return:
+        tifs: numpy array of images
+        netG: imported generator class
+    '''
     try:
         netG.load_state_dict(torch.load(path + '_Gen.pt'))
     except:
@@ -174,7 +205,7 @@ def test(path, labels, netG, n_classes, z_dim=64, lf=4, device='cpu', ratio=2):
         netG.load_state_dict(torch.load(path + '_Gen.pt'))
     
     netG.to(device)
-    names = ['forest', 'city', 'desert', 'sea', 'snow', 'star']
+    names = ['forest', 'desert', 'sea', 'star']
     tifs, raws = [], []
     # try to generate rectangular, instead of square images
     random = torch.randn(1, z_dim, lf, lf*ratio-2, device=device)

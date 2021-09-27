@@ -1,3 +1,7 @@
+'''
+a file that tests functions before they are being added to the project files
+'''
+
 from os import XATTR_REPLACE
 import numpy as np
 import torch
